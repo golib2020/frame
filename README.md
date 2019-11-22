@@ -1,5 +1,12 @@
 # frame
 
+[![Go Doc](https://godoc.org/github.com/golib2020/frame?status.svg)](https://godoc.org/github.com/golib2020/frame)
+[![Build Status](https://travis-ci.org/golib2020/frame.svg?branch=master)](https://travis-ci.org/golib2020/frame)
+[![Go Report](https://goreportcard.com/badge/github.com/golib2020/frame)](https://goreportcard.com/report/github.com/golib2020/frame)
+[![Code Coverage](https://codecov.io/gh/golib2020/frame/branch/master/graph/badge.svg)](https://codecov.io/gh/golib2020/frame/branch/master)
+[![Internal ready](https://img.shields.io/badge/internal-ready-success.svg)](https://github.com/golib2020/frame)
+[![License](https://img.shields.io/github/license/golib2020/frame.svg?style=flat)](https://github.com/golib2020/frame)
+
 基础开发框架
 
 ### 依赖
