@@ -2,13 +2,13 @@
 
 基础开发框架
 
-# 基础使用
+### 依赖
 
 ``` 
 go get -u github.com/golib2020/frame
 ```
 
-### 配置
+### 简单演示
 ```go
 package main
 
@@ -24,8 +24,13 @@ func main() {
 }
 ```
 
-# 配置文件模版 config.json
+### 配置
 
+配置环境变量 `APP_ENV` 配置文件为 `config.<app_env>.json`
+
+> 默认 config.json
+
+## 模版
 ```json
 {
   "db": {
