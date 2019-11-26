@@ -1,10 +1,8 @@
-package redis
+package cache
 
 import (
 	"fmt"
 	"time"
-
-	"github.com/golib2020/frame/cache"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -14,7 +12,7 @@ type redisCache struct {
 	pool   *redis.Pool
 }
 
-func NewCache(prefix string, pool *redis.Pool) cache.Cache {
+func NewRedis(prefix string, pool *redis.Pool) Cache {
 	return &redisCache{
 		prefix: prefix,
 		pool:   pool,

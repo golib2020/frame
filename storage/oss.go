@@ -1,4 +1,4 @@
-package alioss
+package storage
 
 import (
 	"bytes"
@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/golib2020/frame/storage"
 )
 
 type aliOSS struct {
@@ -16,7 +15,7 @@ type aliOSS struct {
 	host   string
 }
 
-func NewAliOSS(root, host string, opts ...Option) storage.Storage {
+func NewAliOSS(root, host string, opts ...Option) Storage {
 	o := &options{}
 	for _, opt := range opts {
 		opt(o)

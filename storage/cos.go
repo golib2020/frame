@@ -1,4 +1,4 @@
-package txcos
+package storage
 
 import (
 	"bytes"
@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/golib2020/frame/storage"
 	"github.com/tencentyun/cos-go-sdk-v5"
 )
 
@@ -19,7 +18,7 @@ type txCOS struct {
 	host   string
 }
 
-func NewCOS(root, host string, opts ...Option) storage.Storage {
+func NewCOS(root, host string, opts ...Option) Storage {
 	o := &options{}
 	for _, opt := range opts {
 		opt(o)

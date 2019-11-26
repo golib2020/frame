@@ -1,4 +1,4 @@
-package local
+package storage
 
 import (
 	"bytes"
@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/golib2020/frame/storage"
 )
 
 type local struct {
@@ -17,7 +15,7 @@ type local struct {
 	host string
 }
 
-func NewLocal(root, host string) storage.Storage {
+func NewLocal(root, host string) Storage {
 	dir, err := filepath.Abs(".")
 	if err != nil {
 		log.Fatalf("filepath.Abs失败:%s\n", err)

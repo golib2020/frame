@@ -1,10 +1,9 @@
-package local
+package cache
 
 import (
 	"bufio"
 	"crypto/md5"
 	"fmt"
-	"github.com/golib2020/frame/cache"
 	"io/ioutil"
 	"log"
 	"os"
@@ -22,7 +21,7 @@ type localCache struct {
 	path   string
 }
 
-func NewCache(prefix, root string) cache.Cache {
+func NewLocal(prefix, root string) Cache {
 	dir, err := filepath.Abs(".")
 	if err != nil {
 		log.Fatalf("filepath.Abs失败:%s\n", err)

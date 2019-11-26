@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/golib2020/frame/cache"
-	"github.com/golib2020/frame/cache/local"
-	"github.com/golib2020/frame/cache/redis"
 )
 
 const (
@@ -31,9 +29,9 @@ func cacheInit(key string) cache.Cache {
 	switch conf.GetString("driver") {
 	case "local":
 		conf.SetDefault("root", "./")
-		s = local.NewCache(conf.GetString("prefix"), conf.GetString("root"))
+		s = cache.NewLocal(conf.GetString("prefix"), conf.GetString("root"))
 	case "redis":
-		s = redis.NewCache(conf.GetString("prefix"), Redis())
+		s = cache.NewRedis(conf.GetString("prefix"), Redis())
 	}
 	return s
 }

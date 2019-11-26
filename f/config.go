@@ -2,7 +2,6 @@ package f
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/spf13/viper"
 )
@@ -28,7 +27,7 @@ func configInit() *viper.Viper {
 	}
 
 	if err := v.ReadInConfig(); err != nil {
-		log.Println(err)
+		//log.Println(err)
 	}
 	return v
 }
