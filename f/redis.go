@@ -2,9 +2,9 @@ package f
 
 import (
 	"fmt"
-	"time"
+	//"github.com/gomodule/redigo/redis"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/golib2020/frame/redis"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 )
 
 //Redis redis实例
-func Redis(name ...string) *redis.Pool {
+func Redis(name ...string) redis.Redis {
 	group := redisDefaultGroup
 	if len(name) > 0 && name[0] != "" {
 		group = name[0]
@@ -21,31 +21,20 @@ func Redis(name ...string) *redis.Pool {
 	key := fmt.Sprintf("%s.%s", redisInstancesPrefix, group)
 	return Instance().GetOrSetFunc(key, func() interface{} {
 		return redisInit(key)
-	}).(*redis.Pool)
+	}).(redis.Redis)
 }
 
-func redisInit(key string) *redis.Pool {
+func redisInit(key string) redis.Redis {
 	conf := Config().Sub(key)
-	db := &redis.Pool{
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", conf.GetString("addr"), redis.DialPassword(conf.GetString("pass")))
-			if err != nil {
-				return nil, err
-			}
-			c.Do("SELECT", 0)
-			return c, nil
-		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			if time.Since(t) < time.Minute {
-				return nil
-			}
-			_, err := c.Do("PING")
-			return err
-		},
-		MaxIdle:     conf.GetInt("max.idle"),
-		MaxActive:   conf.GetInt("max.active"),
-		IdleTimeout: time.Minute,
-		Wait:        true,
+	var c redis.Redis
+	switch conf.GetString("driver") {
+	case "radix":
+		c = redis.NewRadixRedis(
+			redis.WithAddr(conf.GetString("addr")),
+			redis.WithPass(conf.GetString("pass")),
+			redis.WithSize(conf.GetInt("size")),
+			redis.WithSelectDB(conf.GetInt("db")),
+		)
 	}
-	return db
+	return c
 }

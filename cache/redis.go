@@ -1,18 +1,19 @@
 package cache
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/golib2020/frame/redis"
 )
 
 type redisCache struct {
 	prefix string
-	pool   *redis.Pool
+	pool   redis.Redis
 }
 
-func NewRedis(prefix string, pool *redis.Pool) Cache {
+func NewRedis(prefix string, pool redis.Redis) Cache {
 	return &redisCache{
 		prefix: prefix,
 		pool:   pool,
@@ -20,42 +21,35 @@ func NewRedis(prefix string, pool *redis.Pool) Cache {
 }
 
 func (d *redisCache) Has(key string) bool {
-	conn := d.pool.Get()
-	defer conn.Close()
-	b, err := redis.Bool(conn.Do("EXISTS", d.getKey(key)))
-	if err != nil {
+	var b bool
+	if err := d.pool.Do(&b, "EXISTS", d.getKey(key)); err != nil {
 		return false
 	}
 	return b
 }
 
-func (d *redisCache) Get(key string) (string, error) {
-	conn := d.pool.Get()
-	defer conn.Close()
-	content, err := redis.String(conn.Do("GET", d.getKey(key)))
-	if err != nil {
-		return "", err
-	}
-	return content, nil
-}
-
-func (d *redisCache) Set(key string, data string, ex ...time.Duration) error {
-	conn := d.pool.Get()
-	defer conn.Close()
-
-	if len(ex) > 0 {
-		_, err := conn.Do("SET", d.getKey(key), data, "EX", int(ex[0].Seconds()))
+func (d *redisCache) Get(key string, res interface{}) error {
+	var bts []byte
+	if err := d.pool.Do(&bts, "GET", d.getKey(key)); err != nil {
 		return err
 	}
-	_, err := conn.Do("SET", d.getKey(key), data)
-	return err
+	return json.Unmarshal(bts, res)
+}
+
+func (d *redisCache) Set(key string, data interface{}, ex ...time.Duration) error {
+	bts, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	if len(ex) > 0 {
+		exs := fmt.Sprintf("%f", ex[0].Seconds())
+		return d.pool.Do(nil, "SET", d.getKey(key), string(bts), "EX", exs)
+	}
+	return d.pool.Do(nil, "SET", d.getKey(key), string(bts))
 }
 
 func (d *redisCache) Del(key string) error {
-	conn := d.pool.Get()
-	defer conn.Close()
-	_, err := conn.Do("DEL", d.getKey(key))
-	return err
+	return d.pool.Do(nil, "DEL", d.getKey(key))
 }
 
 func (d *redisCache) getKey(key string) string {

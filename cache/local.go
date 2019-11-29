@@ -3,8 +3,8 @@ package cache
 import (
 	"bufio"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -45,35 +45,33 @@ func (l *localCache) Has(key string) bool {
 	return true
 }
 
-func (l *localCache) Get(key string) (data string, err error) {
+func (l *localCache) Get(key string, data interface{}) error {
 	file, err := os.Open(l.GetPath(key))
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer file.Close()
 	reader := bufio.NewReader(file)
 	line, _, err := reader.ReadLine()
 	if err != nil {
-		return "", err
+		return err
 	}
 	sec, err := strconv.ParseInt(string(line), 10, 64)
 	if err != nil {
-		return "", err
+		return err
 	}
 	t := time.Unix(sec, 0)
 	if !t.Equal(maxTime) && time.Now().After(t) {
 		l.Del(l.GetPath(key))
-		return "", nil
+		return nil
 	}
-
-	bts, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return "", err
+	if err := json.NewDecoder(reader).Decode(data); err != nil {
+		return err
 	}
-	return string(bts), nil
+	return nil
 }
 
-func (l *localCache) Set(key string, data string, ex ...time.Duration) error {
+func (l *localCache) Set(key string, data interface{}, ex ...time.Duration) error {
 	file, err := os.OpenFile(l.GetPath(key), os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		return err
@@ -87,7 +85,11 @@ func (l *localCache) Set(key string, data string, ex ...time.Duration) error {
 		expire = maxTime
 	}
 	writer.WriteString(fmt.Sprintf("%d\n", expire.Unix()))
-	writer.WriteString(data)
+	bts, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	writer.Write(bts)
 	return writer.Flush()
 }
 

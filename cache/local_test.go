@@ -31,8 +31,8 @@ func TestLocal(t *testing.T) {
 			if !c.Has(tt.key) {
 				t.Errorf("Has() error")
 			}
-			s, err := c.Get(tt.key)
-			if err != nil {
+			var s string
+			if err := c.Get(tt.key, &s); err != nil {
 				t.Errorf("Get() %v", err)
 			}
 			if s != tt.value {

@@ -8,6 +8,7 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/go-xorm/xorm v0.7.9
 	github.com/gomodule/redigo v2.0.0+incompatible
+	github.com/mediocregopher/radix/v3 v3.4.2
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/spf13/viper v1.5.0

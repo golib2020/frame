@@ -15,12 +15,11 @@
   },
   "redis": {
     "default": {
+      "driver": "radix",
       "addr": "<host>:6379",
       "pass": "",
-      "max": {
-        "idle": 2,
-        "active": 10
-      }
+      "db": 0,
+      "size": 10
     }
   },
   "storage": {
@@ -54,14 +53,6 @@
       "user": "<user email>",
       "pass": "<password>",
       "name": "<发送人的名字>"
-    }
-  },
-  "sms": {
-    "default": {
-      "driver": "wise",
-      "api": "<api url>",
-      "user": "<user>",
-      "pass": "<password>"
     }
   },
   "cache": {
