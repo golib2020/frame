@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/golib2020/frame/redis"
 )
 
 type redisQueue struct {
-	db     *redis.Pool
+	db     redis.Redis
 	expire time.Duration //60s
 }
 
-func NewRedisQueue(db *redis.Pool, ex time.Duration) Queue {
+func NewRedisQueue(db redis.Redis, ex time.Duration) Queue {
 	return &redisQueue{
 		db:     db,
 		expire: ex,
@@ -21,51 +21,41 @@ func NewRedisQueue(db *redis.Pool, ex time.Duration) Queue {
 }
 
 func (r *redisQueue) Size(topic string) (int, error) {
-	conn := r.db.Get()
-	defer conn.Close()
 	topic = r.getTopic(topic)
-	return redis.Int(
-		conn.Do("EVAL",
-			LuaScriptSize,
-			3,
-			topic,
-			fmt.Sprintf("%s:delayed", topic),
-			fmt.Sprintf("%s:reserved", topic),
-		),
+	var rvc int
+	err := r.db.Do(&rvc, "EVAL",
+		LuaScriptSize,
+		fmt.Sprintf("%d", 3),
+		topic,
+		fmt.Sprintf("%s:delayed", topic),
+		fmt.Sprintf("%s:reserved", topic),
 	)
+
+	return rvc, err
 }
 
 func (r *redisQueue) Push(topic string, job Job) error {
-	conn := r.db.Get()
-	defer conn.Close()
 	topic = r.getTopic(topic)
 	bts, err := job.Encode()
 	if err != nil {
 		return err
 	}
-	_, err = conn.Do("RPUSH",
-		topic,
-		bts,
-	)
-	return err
+	return r.db.Do(nil, "RPUSH", topic, string(bts))
 }
 
 func (r *redisQueue) Pop(topic string, job Job) error {
-	conn := r.db.Get()
-	defer conn.Close()
 	topic = r.getTopic(topic)
 	r.migrateExpiredJobs(fmt.Sprintf("%s:delayed", topic), topic)
 	if r.expire != 0 {
 		r.migrateExpiredJobs(fmt.Sprintf("%s:reserved", topic), topic)
 	}
-	bts, err := redis.Bytes(
-		conn.Do("EVAL",
-			LuaScriptPop,
-			2,
-			topic,
-			fmt.Sprintf("%s:reserved", topic),
-			time.Now().Add(r.expire).Unix(),
-		),
+	var bts []byte
+	err := r.db.Do(&bts, "EVAL",
+		LuaScriptPop,
+		fmt.Sprintf("%d", 2),
+		topic,
+		fmt.Sprintf("%s:reserved", topic),
+		fmt.Sprintf("%d", time.Now().Add(r.expire).Unix()),
 	)
 	if err != nil {
 		return err
@@ -80,43 +70,35 @@ func (r *redisQueue) Pop(topic string, job Job) error {
 }
 
 func (r *redisQueue) Later(topic string, job Job, delay time.Duration) error {
-	conn := r.db.Get()
-	defer conn.Close()
 	topic = r.getTopic(topic)
 	bts, err := job.Encode()
 	if err != nil {
 		return err
 	}
-	_, err = conn.Do("ZADD",
+	return r.db.Do(nil, "ZADD",
 		fmt.Sprintf("%s:delayed", topic),
-		time.Now().Add(delay).Unix(),
-		bts,
+		fmt.Sprintf("%d", time.Now().Add(delay).Unix()),
+		string(bts),
 	)
-	return err
 }
 
 //Delete 执行成功后删除
 func (r *redisQueue) Delete(topic string, job Job) error {
-	conn := r.db.Get()
-	defer conn.Close()
 	topic = r.getTopic(topic)
 	bts, err := job.Encode()
 	if err != nil {
 		return err
 	}
-	_, err = conn.Do("EVAL",
+	return r.db.Do(nil, "EVAL",
 		LuaScriptDelete,
-		1,
+		fmt.Sprintf("%d", 1),
 		fmt.Sprintf("%s:reserved", topic),
-		fmt.Sprintf("%s", bts),
+		string(bts),
 	)
-	return err
 }
 
 //Release 失败了重试的情况
 func (r *redisQueue) Release(topic string, job Job, delay time.Duration) error {
-	conn := r.db.Get()
-	defer conn.Close()
 	if !job.IsRetry() {
 		return errors.New("job不可以重试")
 	}
@@ -125,23 +107,23 @@ func (r *redisQueue) Release(topic string, job Job, delay time.Duration) error {
 	if err != nil {
 		return err
 	}
-	_, err = conn.Do("EVAL",
+	return r.db.Do(nil, "EVAL",
 		LuaScriptRelease,
-		2,
+		fmt.Sprintf("%d", 2),
 		fmt.Sprintf("%s:delayed", topic),
 		fmt.Sprintf("%s:reserved", topic),
-		bts,
-		time.Now().Add(delay).Unix(),
+		string(bts),
+		fmt.Sprintf("%d", time.Now().Add(delay).Unix()),
 	)
-	return err
 }
 
 //migrateExpiredJobs 合并延时job到正常队列
 func (r *redisQueue) migrateExpiredJobs(from, to string) error {
-	conn := r.db.Get()
-	defer conn.Close()
-	_, err := conn.Do("EVAL", LuaScriptMigrateExpiredJobs, 2, from, to, time.Now().Unix())
-	return err
+	return r.db.Do(nil, "EVAL", LuaScriptMigrateExpiredJobs,
+		fmt.Sprintf("%d", 2),
+		from, to,
+		fmt.Sprintf("%d", time.Now().Unix()),
+	)
 }
 
 func (r *redisQueue) getTopic(topic string) string {
